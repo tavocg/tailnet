@@ -79,8 +79,6 @@ services:
 volumes:
   model-cache:
   tailscale:
-networks:
-  immich_network:
 configs:
   serve-config:
     content: |
