@@ -1,0 +1,56 @@
+services:
+  ts-mealie:
+    image: tailscale/tailscale:latest
+    container_name: ts-mealie
+    hostname: mealie
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+    configs:
+      - source: serve-config
+        target: /ts/serve.json
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v1.0.0
+    container_name: mealie
+    network_mode: service:ts-mealie
+    depends_on:
+      - ts-mealie
+    volumes:
+      - ${BASE_DATA_DIR:-./}/mealie-data:/app/data/
+    environment:
+      - ALLOW_SIGNUP=true
+    restart: unless-stopped
+volumes:
+  tailscale:
+  mealie-data:
+configs:
+  serve-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://127.0.0.1:9000"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": false
+        }
+      }
