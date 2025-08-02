@@ -2,7 +2,8 @@ services:
   ts-mealie:
     image: tailscale/tailscale:latest
     container_name: ts-mealie
-    hostname: mealie
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
     environment:
       - TS_AUTHKEY
       - TS_EXTRA_ARGS
@@ -14,7 +15,6 @@ services:
     cap_add:
       - net_admin
       - sys_module
-    restart: unless-stopped
     configs:
       - source: serve-config
         target: /ts/serve.json
@@ -30,8 +30,8 @@ services:
       - ALLOW_SIGNUP=true
     restart: unless-stopped
 volumes:
-  tailscale:
   mealie-data:
+  tailscale:
 configs:
   serve-config:
     content: |
