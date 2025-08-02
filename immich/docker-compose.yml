@@ -30,7 +30,7 @@ services:
       - ${UPLOAD_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
     env_file:
-      - ${REPO_PREFIX}immich.env
+      - immich.env
     #ports:
     #  - '2283:2283'
     depends_on:
@@ -51,7 +51,7 @@ services:
     volumes:
       - model-cache:/cache
     env_file:
-      - ${REPO_PREFIX}immich.env
+      - immich.env
     restart: always
     healthcheck:
       disable: false
@@ -98,6 +98,6 @@ configs:
           }
         },
         "AllowFunnel": {
-          "$${TS_CERT_DOMAIN}:443": false
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
         }
       }
