@@ -21,7 +21,6 @@ services:
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
-    network_mode: service:ts-immich
     # extends:
     #   file: hwaccel.transcoding.yml
     #   service: cpu # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
@@ -31,13 +30,13 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - immich.env
-    #ports:
-    #  - '2283:2283'
+    ports:
+      - '2283:2283'
     depends_on:
       - redis
       - database
       - ts-immich
-    restart: always
+    restart: on-failure:2
     healthcheck:
       disable: false
   immich-machine-learning:
@@ -92,7 +91,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://127.0.0.1:2283"
+                "Proxy": "http://immich-server:2283"
               }
             }
           }
