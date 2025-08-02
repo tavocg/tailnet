@@ -30,7 +30,7 @@ services:
       - ${UPLOAD_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
     env_file:
-      - .env
+      - ${REPO_IMMICH_PREFIX}immich.env
     # ports:
     #   - '2283:2283'
     depends_on:
@@ -51,7 +51,7 @@ services:
     volumes:
       - model-cache:/cache
     env_file:
-      - .env
+      - ${REPO_IMMICH_PREFIX}immich.env
     restart: always
     healthcheck:
       disable: false
