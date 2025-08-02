@@ -25,7 +25,7 @@ services:
     depends_on:
       - ts-mealie
     volumes:
-      - ${BASE_DATA_DIR:-./}/mealie-data:/app/data/
+      - ${BASE_DATA_DIR:-.}/mealie-data:/app/data/
     environment:
       - ALLOW_SIGNUP=true
     restart: unless-stopped
