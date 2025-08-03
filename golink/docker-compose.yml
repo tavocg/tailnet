@@ -1,0 +1,9 @@
+services:
+  golink:
+    image: ghcr.io/tailscale/golink:main
+    container_name: golink
+    restart: unless-stopped
+    volumes:
+      - 'data:/home/nonroot'
+volumes:
+  data:
