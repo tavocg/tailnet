@@ -2,9 +2,6 @@ services:
   ts-stirlingpdf:
     image: tailscale/tailscale:latest
     container_name: ts-stirlingpdf
-    network_mode: service:ts-stirlingpdf
-    depends_on:
-      - ts-stirlingpdf
     restart: unless-stopped
     hostname: ${TS_HOSTNAME}
     environment:
@@ -22,6 +19,9 @@ services:
       - source: ts-config
         target: /ts/serve.json
   stirling-pdf:
+    network_mode: service:ts-stirlingpdf
+    depends_on:
+      - ts-stirlingpdf
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
     volumes:
       - pdf-data:/usr/share/tessdata
