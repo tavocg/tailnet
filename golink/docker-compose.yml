@@ -3,7 +3,9 @@ services:
     image: ghcr.io/tailscale/golink:main
     container_name: golink
     restart: unless-stopped
+    environment:
+      - TS_AUTHKEY
     volumes:
-      - 'data:/home/nonroot'
+      - data:/home/nonroot
 volumes:
   data:
