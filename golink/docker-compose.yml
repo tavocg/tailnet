@@ -4,7 +4,7 @@ services:
     container_name: golink
     restart: unless-stopped
     environment:
-      - TS_AUTHKEY
+      TS_AUTHKEY: "${TS_AUTHKEY}"
     volumes:
       - data:/home/nonroot
 volumes:
