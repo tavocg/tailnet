@@ -1,7 +1,10 @@
+# Can be enhanced with an additional compose file
+# See also https://docs.docker.com/compose/production/#modify-your-compose-file-for-production
+
 services:
-  ts-clink:
+  ts-radicale:
     image: tailscale/tailscale:latest
-    container_name: ts-clink
+    container_name: ts-radicale
     restart: unless-stopped
     hostname: ${TS_HOSTNAME}
     environment:
@@ -18,20 +21,37 @@ services:
     configs:
       - source: ts-config
         target: /ts/serve.json
-  clink:
-    build: .
-    container_name: clink
-    network_mode: service:ts-clink
-    depends_on:
-      - ts-clink
-    volumes:
-      - clink-data:/clink-data
-    # Optional: Random seed generated, or use deterministic seed
-    #environment:
-      #- PB_SECRET
+  radicale:
+    image: tomsquest/docker-radicale
+    container_name: radicale
+    network_mode: service:ts-radicale
+    #ports:
+    #  - 127.0.0.1:5232:5232
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - CHOWN
+      - KILL
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          pids: 50
+    healthcheck:
+      test: curl -f http://127.0.0.1:5232 || exit 1
+      interval: 30s
+      retries: 3
     restart: unless-stopped
+    volumes:
+      - ${RADICALE_DATA_DIR}:/data
+
 volumes:
-  clink-data:
   tailscale:
 configs:
   ts-config:
@@ -46,7 +66,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://127.0.0.1:8081"
+                "Proxy": "http://127.0.0.1:5232"
               }
             }
           }

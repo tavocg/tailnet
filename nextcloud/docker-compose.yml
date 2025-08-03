@@ -1,0 +1,59 @@
+services:
+  ts-nextcloud:
+    image: tailscale/tailscale:latest
+    container_name: ts-nextcloud
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+
+  nextcloud-aio-mastercontainer:
+    image: ghcr.io/nextcloud-releases/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    restart: always
+    init: true
+    environment:
+      APACHE_PORT: 11000
+      APACHE_IP_BINDING: 0.0.0.0
+      APACHE_ADDITIONAL_NETWORK: ""
+      SKIP_DOMAIN_VALIDATION: "false"
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8080:8080"
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+  tailscale:
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "80": {
+            "TCPForward": "127.0.0.1:11000"
+          },
+          "443": {
+            "TCPForward": "127.0.0.1:11000"
+          }
+        },
+        "AllowFunnel": {
+          "${TS_CERT_DOMAIN}:80": false,
+          "${TS_CERT_DOMAIN}:443": false
+        }
+      }

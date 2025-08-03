@@ -16,7 +16,7 @@ services:
       - net_admin
       - sys_module
     configs:
-      - source: serve-config
+      - source: ts-config
         target: /ts/serve.json
   pacebin:
     build: .
@@ -34,7 +34,7 @@ volumes:
   pacebin-data:
   tailscale:
 configs:
-  serve-config:
+  ts-config:
     content: |
       {
         "TCP": {

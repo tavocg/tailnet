@@ -27,7 +27,7 @@ services:
       - net_admin
       - sys_module
     configs:
-      - source: serve-config
+      - source: ts-config
         target: /ts/serve.json
   immich-server:
     container_name: immich_server
@@ -94,7 +94,7 @@ volumes:
   model-cache:
   tailscale:
 configs:
-  serve-config:
+  ts-config:
     content: |
       {
         "TCP": {

@@ -1,0 +1,116 @@
+services:
+  ts-nextcloud:
+    image: tailscale/tailscale:latest
+    container_name: ts-nextcloud
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+  caddy:
+    build:
+      context: .
+      dockerfile: Caddy.Dockerfile
+    restart: always
+    #ports:
+    #  - "80:80"
+    #  - "443:443"
+    volumes:
+      - caddy_certs:/certs
+      - caddy_data:/data
+      - caddy_config:/config
+      #- tailscale_sock:/var/run/tailscale:ro
+    configs:
+      - source: caddy-config
+        target: /etc/caddy/Caddyfile
+    network_mode: service:ts-nextcloud
+
+  nextcloud-aio-mastercontainer:
+    image: ghcr.io/nextcloud-releases/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    restart: always
+    init: true
+    environment:
+      APACHE_PORT: 11000
+      APACHE_IP_BINDING: 0.0.0.0
+      APACHE_ADDITIONAL_NETWORK: ""
+      SKIP_DOMAIN_VALIDATION: "false"
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "8080"
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+  caddy_certs:
+  caddy_data:
+  caddy_config:
+  tailscale:
+
+configs:
+  caddy-config:
+    content: |
+      {
+          layer4 {
+              127.0.0.1:3478 {
+                  route {
+                      proxy {
+                          upstream nextcloud-aio-talk:3478
+                      }
+                  }
+              }
+              127.0.0.1:3479 {
+                  route {
+                      proxy {
+                          upstream nextcloud-aio-talk:3479
+                      }
+                  }
+              }
+          }
+      }
+      https://${NC_DOMAIN} {
+          reverse_proxy nextcloud-aio-apache:11000 {
+              header_up X-Forwarded-Proto "https"
+              header_up Host {host}
+          }
+      }
+      http://{$NC_DOMAIN} {
+          reverse_proxy nextcloud-aio-apache:11000 {
+              header_up X-Forwarded-Proto "http"
+              header_up Host {host}
+          }
+      }
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://127.0.0.1:11000"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }

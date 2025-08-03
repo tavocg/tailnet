@@ -16,7 +16,7 @@ services:
       - net_admin
       - sys_module
     configs:
-      - source: serve-config
+      - source: ts-config
         target: /ts/serve.json
   mealie:
     image: ghcr.io/mealie-recipes/mealie:v1.0.0
@@ -33,7 +33,7 @@ volumes:
   mealie-data:
   tailscale:
 configs:
-  serve-config:
+  ts-config:
     content: |
       {
         "TCP": {
@@ -51,6 +51,6 @@ configs:
           }
         },
         "AllowFunnel": {
-          "$${TS_CERT_DOMAIN}:443": false
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
         }
       }
