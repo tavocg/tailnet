@@ -1,10 +1,10 @@
 services:
-  ts-pdf:
+  ts-stirlingpdf:
     image: tailscale/tailscale:latest
-    container_name: ts-pdf
-    network_mode: service:ts-mealie
+    container_name: ts-stirlingpdf
+    network_mode: service:ts-stirlingpdf
     depends_on:
-      - ts-pdf
+      - ts-stirlingpdf
     restart: unless-stopped
     hostname: ${TS_HOSTNAME}
     environment:
