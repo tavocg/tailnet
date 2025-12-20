@@ -28,7 +28,6 @@ services:
     #ports:
     #  - 127.0.0.1:5232:5232
     init: true
-    read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -50,9 +49,14 @@ services:
     restart: unless-stopped
     volumes:
       - ${RADICALE_DATA_DIR}:/data
+      - ${RADICALE_AUTH_DIR}:/auth:ro
+    configs:
+      - source: rc-config
+        target: /config/config
 
 volumes:
   tailscale:
+
 configs:
   ts-config:
     content: |
@@ -75,3 +79,15 @@ configs:
           "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
         }
       }
+  rc-config:
+    content: |
+      [server]
+      hosts = 0.0.0.0:5232
+
+      [auth]
+      type = htpasswd
+      htpasswd_filename = /auth/users
+      htpasswd_encryption = bcrypt
+
+      [storage]
+      filesystem_folder = /data

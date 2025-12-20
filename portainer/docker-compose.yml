@@ -1,0 +1,67 @@
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:lts
+    restart: always
+    ports:
+      - 9443:9443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${PORTAINER_DATA_DIR:-portainer_data}:/data
+    networks:
+      - portainer_network
+
+  ts-portainer:
+    image: tailscale/tailscale:latest
+    container_name: ts-portainer
+    hostname: ${TS_HOSTNAME}
+    restart: 'unless-stopped'
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - portainer
+    networks:
+      - portainer_network
+
+volumes:
+  tailscale:
+  portainer_data:
+
+networks:
+  portainer_network:
+    driver: bridge
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://127.0.0.1:9000"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
