@@ -1,7 +1,24 @@
 services:
-  ts-stirlingpdf:
+  stirling:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: stirling
+    restart: "unless-stopped"
+    ports:
+      - 8080:8080
+    volumes:
+      - pdf-data:/usr/share/tessdata
+      - pdf-data:/configs
+      - pdf-data:/customFiles/
+      - pdf-data:/logs/
+      - pdf-data:/pipeline/
+    environment:
+      - DISABLE_ADDITIONAL_FEATURES=false
+    networks:
+      - stirling_network
+
+  ts-stirling:
     image: tailscale/tailscale:latest
-    container_name: ts-stirlingpdf
+    container_name: ts-stirling
     restart: unless-stopped
     hostname: ${TS_HOSTNAME}
     environment:
@@ -18,22 +35,15 @@ services:
     configs:
       - source: ts-config
         target: /ts/serve.json
-  stirling-pdf:
-    network_mode: service:ts-stirlingpdf
-    depends_on:
-      - ts-stirlingpdf
-    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
-    volumes:
-      - pdf-data:/usr/share/tessdata
-      - pdf-data:/configs
-      - pdf-data:/customFiles/
-      - pdf-data:/logs/
-      - pdf-data:/pipeline/
-    environment:
-      - DISABLE_ADDITIONAL_FEATURES=false
+
 volumes:
   pdf-data:
   tailscale:
+
+networks:
+  stirling_network:
+    driver: bridge
+
 configs:
   ts-config:
     content: |
@@ -47,7 +57,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://127.0.0.1:8080"
+                "Proxy": "http://stirling:8080"
               }
             }
           }

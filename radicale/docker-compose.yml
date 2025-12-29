@@ -77,7 +77,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://127.0.0.1:5232"
+                "Proxy": "http://radicale:5232"
               }
             }
           }
