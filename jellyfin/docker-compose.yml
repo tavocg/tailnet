@@ -2,7 +2,7 @@ services:
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
-    restart: 'unless-stopped'
+    restart: "unless-stopped"
     ports:
       - 8096:8096/tcp
     volumes:
@@ -12,10 +12,11 @@ services:
       # - /path/to/media2:/media2:ro
     networks:
       - jellyfin_network
+
   ts-jellyfin:
     image: tailscale/tailscale:latest
     container_name: ts-jellyfin
-    restart: 'unless-stopped'
+    restart: "unless-stopped"
     hostname: ${TS_HOSTNAME}
     environment:
       - TS_AUTHKEY

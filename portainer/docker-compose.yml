@@ -1,7 +1,7 @@
 services:
   portainer:
-    container_name: portainer
     image: portainer/portainer-ce:lts
+    container_name: portainer
     restart: always
     ports:
       - 9443:9443
@@ -14,8 +14,8 @@ services:
   ts-portainer:
     image: tailscale/tailscale:latest
     container_name: ts-portainer
+    restart: "unless-stopped"
     hostname: ${TS_HOSTNAME}
-    restart: 'unless-stopped'
     environment:
       - TS_AUTHKEY
       - TS_EXTRA_ARGS

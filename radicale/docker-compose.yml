@@ -1,32 +1,7 @@
-# Can be enhanced with an additional compose file
-# See also https://docs.docker.com/compose/production/#modify-your-compose-file-for-production
-
 services:
-  ts-radicale:
-    image: tailscale/tailscale:latest
-    container_name: ts-radicale
-    restart: unless-stopped
-    hostname: ${TS_HOSTNAME}
-    environment:
-      - TS_AUTHKEY
-      - TS_EXTRA_ARGS
-      - TS_SERVE_CONFIG=/ts/serve.json
-    volumes:
-      - tailscale:/var/lib/tailscale
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-      - sys_module
-    configs:
-      - source: ts-config
-        target: /ts/serve.json
   radicale:
     image: tomsquest/docker-radicale
     container_name: radicale
-    network_mode: service:ts-radicale
-    #ports:
-    #  - 127.0.0.1:5232:5232
     init: true
     security_opt:
       - no-new-privileges:true
@@ -46,16 +21,48 @@ services:
       test: curl -f http://127.0.0.1:5232 || exit 1
       interval: 30s
       retries: 3
-    restart: unless-stopped
-    volumes:
-      - ${RADICALE_DATA_DIR}:/data
-      - ${RADICALE_AUTH_DIR}:/auth:ro
     configs:
       - source: rc-config
         target: /config/config
+    restart: "unless-stopped"
+    ports:
+      - 5232:5232
+    volumes:
+      - ${RADICALE_DATA_DIR}:/data
+      - ${RADICALE_AUTH_DIR}:/auth:ro
+    networks:
+      - radicale_network
+
+  ts-radicale:
+    image: tailscale/tailscale:latest
+    container_name: ts-radicale
+    restart: "unless-stopped"
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - radicale
+    networks:
+      - radicale_network
 
 volumes:
   tailscale:
+
+networks:
+  radicale_network:
+    driver: bridge
 
 configs:
   ts-config:
