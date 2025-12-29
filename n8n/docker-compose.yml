@@ -1,0 +1,81 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: always
+    ports:
+      - 5678:5678
+    environment:
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_HOST=${N8N_PUBLIC_DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_PUBLIC_API_DISABLED=true
+      - N8N_PUBLIC_API_SWAGGERUI_DISABLED=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_INVITE_LINKS_EMAIL_ONLY=true
+      - NODES_EXCLUDE=["n8n-nodes-base.executeCommand"]
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${N8N_PUBLIC_DOMAIN}/
+      - GENERIC_TIMEZONE=${N8N_TZ}
+      - TZ=${N8N_TZ}
+    volumes:
+      - ${N8N_DATA_DIR}:/home/node/.n8n
+      - ${N8N_SHARED_DIR}:/files
+    networks:
+      - n8n_network
+
+  ts-n8n:
+    image: tailscale/tailscale:latest
+    container_name: ts-n8n
+    restart: "unless-stopped"
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - n8n
+    networks:
+      - n8n_network
+
+volumes:
+  tailscale:
+
+networks:
+  n8n_network:
+    driver: bridge
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://n8n:5678"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
