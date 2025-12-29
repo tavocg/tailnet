@@ -1,0 +1,4 @@
+immich
+nextcloud
+trilium
+mealie
