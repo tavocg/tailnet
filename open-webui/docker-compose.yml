@@ -1,0 +1,65 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main-slim
+    container_name: open-webui
+    restart: "unless-stopped"
+    ports:
+      - "3000:8080"
+    volumes:
+      - ${OI_DATA_PATH}:/app/backend/data
+    networks:
+      - open-webui_network
+
+  ts-open-webui:
+    image: tailscale/tailscale:latest
+    container_name: ts-open-webui
+    restart: "unless-stopped"
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - open-webui
+    networks:
+      - open-webui_network
+
+volumes:
+  tailscale:
+
+networks:
+  open-webui_network:
+    driver: bridge
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://open-webui:8080"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
