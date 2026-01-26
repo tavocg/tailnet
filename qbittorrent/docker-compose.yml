@@ -2,6 +2,7 @@ services:
   wireguard:
     image: linuxserver/wireguard
     container_name: wireguard
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -10,14 +11,16 @@ services:
       - PGID=${PGID:-1000}
       - TZ=${TZ:-America/Chicago}
     volumes:
-      - ${WG_CONFIG_DIR:-./wg}:/config/wg_confs
+      - ${WG_CONFIG_DIR:-wgconfig}:/config/wg_confs
     ports:
       - ${WEBUI_PORT:-8080}:${WEBUI_PORT:-8080}
       - ${TORRENTING_PORT:-6881}:${TORRENTING_PORT:-6881}
       - ${TORRENTING_PORT:-6881}:${TORRENTING_PORT:-6881}/udp
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
-    restart: unless-stopped
+    configs:
+      - source: wg0-config
+        target: /config/wg_confs/wg0.conf
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -38,5 +41,23 @@ services:
     restart: unless-stopped
 
 volumes:
+  wgconfig:
   config:
   incomplete:
+
+configs:
+  wg0-config:
+    content: |
+      [Interface]
+      PrivateKey = ${PRIVATE_KEY}
+      Address = ${ADDRESSES}
+      DNS = ${DNS:-1.1.1.1,1.0.0.1}
+
+      # Uncomment the next line to set a custom MTU
+      # MTU = 1420
+
+      [Peer]
+      PublicKey = ${PUBLIC_KEY}
+      PresharedKey = ${PRESHARED_KEY}
+      Endpoint = ${ENDPOINT}
+      AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0,::/0}
