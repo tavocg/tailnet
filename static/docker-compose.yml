@@ -82,7 +82,7 @@ configs:
     content: |
       :80 {
         root * /srv
-        basicauth {
+        basic_auth {
           ${CADDY_AUTH_USER} ${CADDY_AUTH_HASH}
         }
         file_server browse
