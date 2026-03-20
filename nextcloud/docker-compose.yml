@@ -13,7 +13,7 @@ services:
       - 0.0.0.0:8080:8080
     environment:
       APACHE_PORT: 11000
-      APACHE_IP_BINDING: 127.0.0.1
+      APACHE_IP_BINDING: 0.0.0.0
       APACHE_ADDITIONAL_NETWORK: nextcloud_frontend
       SKIP_DOMAIN_VALIDATION: true
 
@@ -64,7 +64,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://nextcloud-aio-apache.nextcloud_frontend:11000"
+                "Proxy": "http://nextcloud-aio-apache:11000"
               }
             }
           }
