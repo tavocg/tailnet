@@ -23,6 +23,7 @@ services:
       context: .
       args:
         BIN_GIT_REF: ${BIN_GIT_REF:-master}
+    pull_policy: build
     container_name: bin
     network_mode: service:ts-bin
     depends_on:
