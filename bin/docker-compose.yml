@@ -1,0 +1,63 @@
+services:
+  ts-bin:
+    image: tailscale/tailscale:latest
+    container_name: ts-bin
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+  bin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BIN_GIT_REF: ${BIN_GIT_REF:-master}
+    container_name: bin
+    network_mode: service:ts-bin
+    depends_on:
+      - ts-bin
+    command:
+      - 0.0.0.0:${BIN_PORT:-8000}
+      - --buffer-size
+      - ${BIN_BUFFER_SIZE:-1000}
+      - --max-paste-size
+      - ${BIN_MAX_PASTE_SIZE:-32768}
+    restart: unless-stopped
+
+volumes:
+  tailscale:
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://127.0.0.1:${BIN_PORT:-8000}"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
