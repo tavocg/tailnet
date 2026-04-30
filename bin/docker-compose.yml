@@ -21,7 +21,6 @@ services:
   bin:
     build:
       context: .
-      dockerfile: Dockerfile
       args:
         BIN_GIT_REF: ${BIN_GIT_REF:-master}
     container_name: bin
