@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   ts-bin:
     image: tailscale/tailscale:latest
@@ -23,7 +25,6 @@ services:
       context: .
       args:
         BIN_GIT_REF: ${BIN_GIT_REF:-master}
-    pull_policy: build
     container_name: bin
     network_mode: service:ts-bin
     depends_on:
