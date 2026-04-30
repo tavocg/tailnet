@@ -23,7 +23,7 @@ services:
   bin:
     build:
       context: .
-      dockerfile: bin/Dockerfile
+      dockerfile: Dockerfile
       args:
         BIN_GIT_REF: ${BIN_GIT_REF:-master}
     pull_policy: build
