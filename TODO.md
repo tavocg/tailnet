@@ -1,4 +1,3 @@
 immich
-nextcloud
 trilium
 mealie
