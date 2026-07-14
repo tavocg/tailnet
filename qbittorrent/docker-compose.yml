@@ -43,6 +43,9 @@ services:
     configs:
       - source: wg0-config
         target: /config/wg_confs/wg0.conf
+    networks:
+      - default
+      - arr_network
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -67,6 +70,11 @@ volumes:
   wgconfig:
   config:
   incomplete:
+
+networks:
+  arr_network:
+    name: arr_network
+    driver: bridge
 
 configs:
   ts-config:

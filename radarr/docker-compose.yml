@@ -20,6 +20,8 @@ services:
     configs:
       - source: ts-config
         target: /ts/serve.json
+    networks:
+      - arr_network
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -40,6 +42,11 @@ services:
 volumes:
   tailscale:
   config:
+
+networks:
+  arr_network:
+    name: arr_network
+    external: true
 
 configs:
   ts-config:
