@@ -1,4 +1,26 @@
 services:
+  ts-qbittorrent:
+    image: tailscale/tailscale:latest
+    container_name: ts-qbittorrent
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - qbittorrent
+
   wireguard:
     image: linuxserver/wireguard
     container_name: wireguard
@@ -41,11 +63,34 @@ services:
     restart: unless-stopped
 
 volumes:
+  tailscale:
   wgconfig:
   config:
   incomplete:
 
 configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://wireguard:${WEBUI_PORT:-8080}"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
+
   wg0-config:
     content: |
       [Interface]
