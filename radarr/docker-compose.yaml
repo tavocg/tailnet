@@ -1,21 +1,4 @@
 services:
-  radarr:
-    image: lscr.io/linuxserver/radarr:latest
-    container_name: radarr
-    restart: unless-stopped
-    environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - TZ=${TZ:-America/Chicago}
-    volumes:
-      - ${RADARR_CONFIG_DIR:-config}:/config
-      - ${RADARR_MOVIES_DIR:-/mnt/storage/media/movies}:/movies
-      - ${RADARR_DOWNLOADS_DIR:-/mnt/storage/data/qbittorrent/downloads}:/downloads
-    ports:
-      - 7878:7878
-    networks:
-      - radarr_network
-
   ts-radarr:
     image: tailscale/tailscale:latest
     container_name: ts-radarr
@@ -27,6 +10,8 @@ services:
       - TS_SERVE_CONFIG=/ts/serve.json
     volumes:
       - tailscale:/var/lib/tailscale
+    ports:
+      - 7878:7878
     devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
@@ -35,18 +20,26 @@ services:
     configs:
       - source: ts-config
         target: /ts/serve.json
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    network_mode: service:ts-radarr
     depends_on:
-      - radarr
-    networks:
-      - radarr_network
+      - ts-radarr
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ${RADARR_CONFIG_DIR:-config}:/config
+      - ${RADARR_MOVIES_DIR:-/mnt/storage/media/movies}:/movies
+      - ${RADARR_DOWNLOADS_DIR:-/mnt/storage/data/qbittorrent/downloads}:/downloads
 
 volumes:
   tailscale:
   config:
-
-networks:
-  radarr_network:
-    driver: bridge
 
 configs:
   ts-config:
@@ -61,7 +54,7 @@ configs:
           "$${TS_CERT_DOMAIN}:443": {
             "Handlers": {
               "/": {
-                "Proxy": "http://radarr:7878"
+                "Proxy": "http://127.0.0.1:7878"
               }
             }
           }
