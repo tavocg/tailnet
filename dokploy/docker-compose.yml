@@ -3,6 +3,8 @@ services:
     image: postgres:16
     container_name: dokploy-postgres
     restart: always
+    deploy:
+      endpoint_mode: dnsrr
     environment:
       POSTGRES_USER: dokploy
       POSTGRES_DB: dokploy
@@ -21,6 +23,8 @@ services:
     image: dokploy/dokploy:latest
     container_name: dokploy
     restart: always
+    deploy:
+      endpoint_mode: dnsrr
     depends_on:
       - dokploy-postgres
     environment:
@@ -42,6 +46,8 @@ services:
     image: traefik:v3.6.7
     container_name: dokploy-traefik
     restart: always
+    deploy:
+      endpoint_mode: dnsrr
     depends_on:
       - dokploy-app
     command:
@@ -59,6 +65,8 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: dokploy-cloudflared
     restart: unless-stopped
+    deploy:
+      endpoint_mode: dnsrr
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
     depends_on:
       - dokploy-traefik
@@ -69,6 +77,8 @@ services:
     image: tailscale/tailscale:latest
     container_name: ts-dokploy
     restart: unless-stopped
+    deploy:
+      endpoint_mode: dnsrr
     hostname: ${TS_HOSTNAME}
     environment:
       - TS_AUTHKEY
