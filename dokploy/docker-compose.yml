@@ -84,7 +84,7 @@ services:
       - net_admin
       - sys_module
     configs:
-      - source: ts-config
+      - source: dokploy-ts-config
         target: /ts/serve.json
     depends_on:
       - dokploy
@@ -108,5 +108,5 @@ secrets:
     external: true
 
 configs:
-  ts-config:
+  dokploy-ts-config:
     external: true
