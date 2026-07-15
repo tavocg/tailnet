@@ -1,0 +1,131 @@
+name: dokploy
+
+services:
+  dokploy-postgres:
+    image: postgres:16
+    container_name: dokploy-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: dokploy
+      POSTGRES_DB: dokploy
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - source: dokploy_postgres_password
+        target: postgres_password
+    volumes:
+      - dokploy-postgres:/var/lib/postgresql/data
+    networks:
+      - dokploy-network
+
+  dokploy:
+    image: dokploy/dokploy:latest
+    container_name: dokploy
+    restart: always
+    depends_on:
+      - dokploy-postgres
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+    secrets:
+      - source: dokploy_postgres_password
+        target: postgres_password
+    expose:
+      - 3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOKPLOY_CONFIG_DIR:-dokploy-config}:/etc/dokploy
+      - dokploy:/root/.docker
+    networks:
+      dokploy-network:
+        aliases:
+          - dokploy-app
+
+  dokploy-traefik:
+    image: traefik:v3.6.7
+    container_name: dokploy-traefik
+    restart: always
+    depends_on:
+      - dokploy
+    command:
+      - --configFile=/etc/dokploy/traefik/traefik.yml
+    expose:
+      - 80
+      - 443
+    volumes:
+      - ${DOKPLOY_CONFIG_DIR:-dokploy-config}:/etc/dokploy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dokploy-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dokploy-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
+    depends_on:
+      - dokploy-traefik
+    networks:
+      - dokploy-network
+
+  ts-dokploy:
+    image: tailscale/tailscale:latest
+    container_name: ts-dokploy
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    depends_on:
+      - dokploy
+    networks:
+      - dokploy-network
+
+volumes:
+  dokploy:
+  dokploy-config:
+  dokploy-postgres:
+  tailscale:
+
+networks:
+  dokploy-network:
+    name: dokploy-network
+    driver: overlay
+    attachable: true
+
+secrets:
+  dokploy_postgres_password:
+    environment: DOKPLOY_POSTGRES_PASSWORD
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://dokploy-app:3000"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
