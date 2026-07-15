@@ -15,7 +15,7 @@ services:
     networks:
       - dokploy-network
 
-  dokploy:
+  dokploy-app:
     image: dokploy/dokploy:latest
     container_name: dokploy
     restart: always
@@ -34,16 +34,14 @@ services:
       - ${DOKPLOY_CONFIG_DIR:-dokploy-config}:/etc/dokploy
       - dokploy:/root/.docker
     networks:
-      dokploy-network:
-        aliases:
-          - dokploy-app
+      - dokploy-network
 
   dokploy-traefik:
     image: traefik:v3.6.7
     container_name: dokploy-traefik
     restart: always
     depends_on:
-      - dokploy
+      - dokploy-app
     command:
       - --configFile=/etc/dokploy/traefik/traefik.yml
     expose:
@@ -85,7 +83,7 @@ services:
       - source: dokploy-ts-config
         target: /ts/serve.json
     depends_on:
-      - dokploy
+      - dokploy-app
     networks:
       - dokploy-network
 
