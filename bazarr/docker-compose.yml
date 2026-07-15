@@ -1,0 +1,72 @@
+services:
+  ts-bazarr:
+    image: tailscale/tailscale:latest
+    container_name: ts-bazarr
+    restart: unless-stopped
+    hostname: ${TS_HOSTNAME}
+    environment:
+      - TS_AUTHKEY
+      - TS_EXTRA_ARGS
+      - TS_SERVE_CONFIG=/ts/serve.json
+    volumes:
+      - tailscale:/var/lib/tailscale
+    ports:
+      - 6767:6767
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    configs:
+      - source: ts-config
+        target: /ts/serve.json
+    networks:
+      - arr_network
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    network_mode: service:ts-bazarr
+    depends_on:
+      - ts-bazarr
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/Chicago}
+    volumes:
+      - ${BAZARR_CONFIG_DIR:-config}:/config
+      - ${BAZARR_MOVIES_DIR:-/mnt/storage/media/movies}:/movies
+      - ${BAZARR_TV_DIR:-/mnt/storage/media/shows}:/tv
+
+volumes:
+  tailscale:
+  config:
+
+networks:
+  arr_network:
+    name: arr_network
+    external: true
+
+configs:
+  ts-config:
+    content: |
+      {
+        "TCP": {
+          "443": {
+            "HTTPS": true
+          }
+        },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/": {
+                "Proxy": "http://127.0.0.1:6767"
+              }
+            }
+          }
+        },
+        "AllowFunnel": {
+          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
+        }
+      }
