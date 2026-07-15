@@ -13,7 +13,9 @@ services:
     volumes:
       - dokploy-postgres:/var/lib/postgresql/data
     networks:
-      - dokploy-network
+      dokploy-network:
+        aliases:
+          - dokploy-postgres
 
   dokploy-app:
     image: dokploy/dokploy:latest
