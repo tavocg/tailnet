@@ -1,0 +1,19 @@
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "dokploy.<tailnet>.ts.net:443": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://dokploy-app:3000"
+        }
+      }
+    }
+  },
+  "AllowFunnel": {
+    "dokploy.<tailnet>.ts.net:443": false
+  }
+}

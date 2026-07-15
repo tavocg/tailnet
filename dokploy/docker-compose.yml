@@ -109,23 +109,4 @@ secrets:
 
 configs:
   ts-config:
-    content: |
-      {
-        "TCP": {
-          "443": {
-            "HTTPS": true
-          }
-        },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": {
-              "/": {
-                "Proxy": "http://dokploy-app:3000"
-              }
-            }
-          }
-        },
-        "AllowFunnel": {
-          "$${TS_CERT_DOMAIN}:443": ${TS_ALLOW_FUNNEL:-false}
-        }
-      }
+    external: true
