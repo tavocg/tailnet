@@ -13,6 +13,17 @@ services:
     networks:
       - jellyfin_network
 
+  teletica-jellyfin-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.teletica-jellyfin-proxy
+    container_name: teletica-jellyfin-proxy
+    restart: "unless-stopped"
+    expose:
+      - "8787"
+    networks:
+      - jellyfin_network
+
   ts-jellyfin:
     image: tailscale/tailscale:latest
     container_name: ts-jellyfin

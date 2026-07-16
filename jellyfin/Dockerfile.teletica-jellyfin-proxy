@@ -1,0 +1,9 @@
+FROM python:3.13-alpine
+
+WORKDIR /app
+
+COPY teletica-jellyfin-proxy.py /app/teletica-jellyfin-proxy.py
+
+EXPOSE 8787
+
+CMD ["python", "/app/teletica-jellyfin-proxy.py"]
