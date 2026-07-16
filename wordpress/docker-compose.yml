@@ -4,10 +4,8 @@ services:
       context: .
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     entrypoint:
       - bash
       - /usr/local/bin/wordpress-entrypoint.sh
@@ -51,7 +49,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
-      start_interval: 10s
     networks:
       - wordpress_network
 
@@ -71,7 +68,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-      start_interval: 5s
     networks:
       - wordpress_network
 
@@ -94,7 +90,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-      start_interval: 5s
     networks:
       - wordpress_network
 
@@ -103,8 +98,7 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN}
     depends_on:
-      wordpress:
-        condition: service_started
+      - wordpress
     networks:
       - wordpress_network
 
