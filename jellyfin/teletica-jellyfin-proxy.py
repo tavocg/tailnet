@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 UPSTREAM_MASTER = "https://cdn01.teletica.com/TeleticaLiveStream/Stream/playlist_dvr.m3u8"
 UPSTREAM_ORIGIN = "https://cdn01.teletica.com/"
 SCHEDULE_URL = "https://www.teletica.com/programa"
+CHANNEL_LOGO = "https://teletica-static.ray.media/Files/Sizes/2024/4/5/teletica7_717404571_380x260.png"
 REFERER = "https://bradmax.com/"
 TLS_CONTEXT = ssl._create_unverified_context()
 
@@ -163,10 +164,10 @@ class Handler(BaseHTTPRequestHandler):
         xmltv = f"{base}/xmltv.xml"
         body = (
             '#EXTM3U x-tvg-url="{xmltv}"\n'
-            '#EXTINF:-1 tvg-id="teletica" tvg-name="Teletica" tvg-chno="7" '
+            '#EXTINF:-1 tvg-id="teletica" tvg-name="Teletica" tvg-chno="7" tvg-logo="{logo}" '
             'group-title="Costa Rica",Teletica\n'
             "{stream}\n"
-        ).format(xmltv=xmltv, stream=stream)
+        ).format(xmltv=xmltv, logo=CHANNEL_LOGO, stream=stream)
         self.send_bytes(200, body.encode("utf-8"), "audio/x-mpegurl; charset=utf-8")
 
     def send_xmltv(self):
@@ -182,6 +183,7 @@ class Handler(BaseHTTPRequestHandler):
             '  <channel id="teletica">',
             "    <display-name>Teletica</display-name>",
             "    <display-name>Teletica 7</display-name>",
+            f'    <icon src="{escape(CHANNEL_LOGO, quote=True)}" />',
             "  </channel>",
         ]
 
