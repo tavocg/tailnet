@@ -43,9 +43,6 @@ services:
         define('WP_REDIS_DATABASE', (int) (getenv('REDIS_DATABASE') ?: 0));
         define('WP_REDIS_PASSWORD', getenv('REDISPASSWORD') ?: '');
         define('WP_REDIS_PREFIX', getenv('WP_REDIS_PREFIX') ?: 'wordpress:');
-    configs:
-      - source: wordpress-entrypoint
-        target: /usr/local/bin/wordpress-entrypoint.sh
     volumes:
       - ${WORDPRESS_DATA_DIR:?set WORDPRESS_DATA_DIR}:/var/www/html
     healthcheck:
@@ -114,7 +111,3 @@ services:
 networks:
   wordpress_network:
     driver: bridge
-
-configs:
-  wordpress-entrypoint:
-    file: ./wordpress-entrypoint.sh
