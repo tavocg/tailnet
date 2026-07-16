@@ -1,0 +1,115 @@
+services:
+  wordpress:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - /usr/local/bin/wordpress-entrypoint.sh
+    expose:
+      - 80
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
+      REDISHOST: redis
+      REDISPORT: 6379
+      REDISPASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      WP_REDIS_PREFIX: ${WP_REDIS_PREFIX:-wordpress:}
+      MAILGUN_API_KEY: ${MAILGUN_API_KEY:-}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-example.com}
+      MAILGUN_ENDPOINT: ${MAILGUN_ENDPOINT:-https://api.mailgun.net}
+      MAILGUN_FROM_EMAIL: ${MAILGUN_FROM_EMAIL:-noreply@example.com}
+      MAILGUN_FROM_NAME: ${MAILGUN_FROM_NAME:-WordPress}
+      WORDPRESS_DOMAIN: ${WORDPRESS_DOMAIN:-example.com}
+      WORDPRESS_SITE_NAME: ${WORDPRESS_SITE_NAME:-WordPress}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://${WORDPRESS_DOMAIN:-example.com}');
+        define('WP_SITEURL', 'https://${WORDPRESS_DOMAIN:-example.com}');
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') { $$_SERVER['HTTPS'] = 'on'; }
+        if (isset($$_SERVER['HTTP_CF_VISITOR']) && strpos($$_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) { $$_SERVER['HTTPS'] = 'on'; }
+        define('WP_CACHE', true);
+        define('WP_REDIS_HOST', getenv('REDISHOST') ?: 'redis');
+        define('WP_REDIS_PORT', (int) (getenv('REDISPORT') ?: 6379));
+        define('WP_REDIS_DATABASE', (int) (getenv('REDIS_DATABASE') ?: 0));
+        define('WP_REDIS_PASSWORD', getenv('REDISPASSWORD') ?: '');
+        define('WP_REDIS_PREFIX', getenv('WP_REDIS_PREFIX') ?: 'wordpress:');
+    configs:
+      - source: wordpress-entrypoint
+        target: /usr/local/bin/wordpress-entrypoint.sh
+    volumes:
+      - ${WORDPRESS_DATA_DIR:-./data/wordpress}:/var/www/html
+    healthcheck:
+      test: curl -fsS http://127.0.0.1/wp-login.php >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - wordpress_network
+
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ${MYSQL_DATA_DIR:-./data/mysql}:/var/lib/mysql
+    healthcheck:
+      test: mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - wordpress_network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+        exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD";
+      else
+        exec redis-server --appendonly yes;
+      fi'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes:
+      - ${REDIS_DATA_DIR:-./data/redis}:/data
+    healthcheck:
+      test: redis-cli $${REDIS_PASSWORD:+-a $$REDIS_PASSWORD} ping | grep PONG
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - wordpress_network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    networks:
+      - wordpress_network
+
+networks:
+  wordpress_network:
+    driver: bridge
+
+configs:
+  wordpress-entrypoint:
+    file: ./wordpress-entrypoint.sh
