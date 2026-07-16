@@ -11,6 +11,7 @@ services:
     entrypoint:
       - bash
       - /usr/local/bin/wordpress-entrypoint.sh
+    command: apache2-foreground
     expose:
       - 80
     environment:
@@ -53,6 +54,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
+      start_interval: 10s
     networks:
       - wordpress_network
 
@@ -72,6 +74,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+      start_interval: 5s
     networks:
       - wordpress_network
 
@@ -93,6 +96,8 @@ services:
       interval: 10m
       timeout: 5s
       retries: 10
+      start_period: 30s
+      start_interval: 5s
     networks:
       - wordpress_network
 
@@ -102,7 +107,7 @@ services:
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN:?set CLOUDFLARED_TOKEN}
     depends_on:
       wordpress:
-        condition: service_healthy
+        condition: service_started
     networks:
       - wordpress_network
 
