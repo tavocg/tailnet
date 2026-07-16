@@ -1,3 +1,0 @@
-immich
-trilium
-mealie
