@@ -6,6 +6,14 @@ if [ ! -e /var/www/html/index.php ] && [ -d /usr/src/wordpress ]; then
   chown -R www-data:www-data /var/www/html
 fi
 
+wordpress_upload_max_filesize="${WORDPRESS_UPLOAD_MAX_FILESIZE:-2M}"
+wordpress_post_max_size="${WORDPRESS_POST_MAX_SIZE:-8M}"
+
+cat > "${PHP_INI_DIR:-/usr/local/etc/php}/conf.d/wordpress-uploads.ini" <<INI
+upload_max_filesize = ${wordpress_upload_max_filesize}
+post_max_size = ${wordpress_post_max_size}
+INI
+
 mkdir -p \
   /var/www/html/wp-content/plugins \
   /var/www/html/wp-content/mu-plugins \
